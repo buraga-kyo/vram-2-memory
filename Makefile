@@ -38,11 +38,12 @@ FONTES_DO_CLIENTE := src/principal_do_governo.c src/canal_de_governo.c \
 	src/ordem_do_cliente.c src/carga_de_creacao.c src/configuracao_decimal.c \
 	src/numero_decimal.c src/configuracao.c
 SERVIDOR := $(DIRECTORIO_DA_CONSTRUCAO)/vramdiskd
+SERVIDOR_SIMULADO := $(DIRECTORIO_DA_CONSTRUCAO)/vramdiskd-simulado
 CLIENTE := $(DIRECTORIO_DA_CONSTRUCAO)/vramdiskctl
 PROVA_CUDA := $(DIRECTORIO_DA_CONSTRUCAO)/provar_meio_cuda
 DEMONSTRACAO := $(DIRECTORIO_DA_CONSTRUCAO)/demonstrar_observatorio
 
-.PHONY: provar provar_integracao provar_vm demonstrar_simulacao provar_cuda provar_pressao preparar_ublk preparar_cuda preparar_cliente limpar
+.PHONY: provar provar_integracao provar_vm demonstrar_simulacao provar_cuda provar_pressao preparar_ublk preparar_cuda preparar_simulado preparar_cliente limpar
 
 provar: $(PROVAS)
 	@for prova in $(PROVAS); do $$prova; done
@@ -157,6 +158,7 @@ $(DEMONSTRACAO): demonstracoes/demonstrar_observatorio.c src/meio_simulado.c \
 
 preparar_ublk: $(SERVIDOR)
 preparar_cuda: $(SERVIDOR)
+preparar_simulado: $(SERVIDOR_SIMULADO)
 preparar_cliente: $(CLIENTE)
 provar_cuda: $(PROVA_CUDA)
 	$(PROVA_CUDA)
@@ -174,8 +176,13 @@ $(SERVIDOR): $(FONTES_DO_SERVIDOR) | $(DIRECTORIO_DA_CONSTRUCAO)
 		-isystem$$(pkg-config --variable=includedir ublksrv) $^ -o $@ \
 		$$(pkg-config --libs ublksrv) -lcuda -pthread
 
+$(SERVIDOR_SIMULADO): $(filter-out src/meio_cuda.c,$(FONTES_DO_SERVIDOR)) | $(DIRECTORIO_DA_CONSTRUCAO)
+	$(COMPILADOR) $(AVISOS) -D_GNU_SOURCE -DVRAM_SEM_CUDA \
+		-isystem$$(pkg-config --variable=includedir ublksrv) $^ -o $@ \
+		$$(pkg-config --libs ublksrv) -pthread
+
 $(CLIENTE): $(FONTES_DO_CLIENTE) | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) $^ -o $@
 
 limpar:
-	rm -f $(PROVAS) $(PROVA_CUDA) $(SERVIDOR) $(CLIENTE) $(DEMONSTRACAO)
+	rm -f $(PROVAS) $(PROVA_CUDA) $(SERVIDOR) $(SERVIDOR_SIMULADO) $(CLIENTE) $(DEMONSTRACAO)
