@@ -137,7 +137,7 @@ int main(void)
     int memoria_registrada = 0;
     int resultado = 1;
 
-    if (!criar_meio_cuda(&meio, 0, 8192) ||
+    if (!criar_meio_cuda(&meio, 0, 8192, 1) ||
         !criar_transportador_cuda(&transportador, &meio)) goto termo;
     if (criar_reserva_de_buffers(&reserva, 1, 2, 4096) < 0 ||
         !registrar_memoria_intermediaria_cuda(

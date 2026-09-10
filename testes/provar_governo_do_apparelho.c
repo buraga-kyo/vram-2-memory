@@ -64,7 +64,7 @@ int falhar_prova_do_governo(
 int main(void)
 {
     const struct configuracao_do_apparelho configuracao = {
-        0, UINT64_C(65536), 1, 2, UINT32_C(4096), UINT32_C(1000)
+        0, UINT64_C(65536), 1, 2, UINT32_C(4096), UINT32_C(1000), 0
     };
     struct contexto_da_prova_do_governo contexto = {0};
     struct governo_do_apparelho governo;

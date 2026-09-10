@@ -14,7 +14,7 @@
 int main(void)
 {
     struct configuracao_do_apparelho configuracao = {
-        0, 65536, 2, 4, 8192, 1000
+        0, 65536, 2, 4, 8192, 1000, 0
     };
     uint64_t quantidade = 17;
 

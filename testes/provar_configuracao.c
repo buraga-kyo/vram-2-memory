@@ -22,7 +22,7 @@ int main(void)
 {
     const struct configuracao_do_apparelho valida = {
         0, 16U * TAMANHO_DO_BLOCO_EM_BYTES, 2, 4,
-        2U * TAMANHO_DO_BLOCO_EM_BYTES, 1000
+        2U * TAMANHO_DO_BLOCO_EM_BYTES, 1000, 0
     };
     struct configuracao_do_apparelho figura;
     if (!configuracao_do_apparelho_e_valida(&valida) ||

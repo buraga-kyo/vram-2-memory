@@ -4,7 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
+
+#define MARGEM_DA_VRAM_EM_BYTES UINT64_C(536870912)
 
 /* Uma etiqueta CUDA conserva a sentença que aguarda colheita. */
 struct conclusao_cuda {
@@ -40,7 +43,8 @@ struct meio_assincrono_cuda {
  * Razão: o zero inicial impede que leitura preceda escripta com lixo antigo.
  */
 int criar_meio_cuda(struct meio_cuda *meio, int indice_da_gpu,
-                    uint64_t capacidade_em_bytes)
+                    uint64_t capacidade_em_bytes,
+                    int consentir_margem_da_vram)
 {
     CUdeviceptr memoria;
     CUcontext contexto;
@@ -58,6 +62,19 @@ int criar_meio_cuda(struct meio_cuda *meio, int indice_da_gpu,
     if (cuCtxSetCurrent(contexto) != CUDA_SUCCESS) {
         cuDevicePrimaryCtxRelease(dispositivo);
         return 0;
+    }
+    {
+        size_t livre, total;
+        if (cuMemGetInfo(&livre, &total) != CUDA_SUCCESS ||
+            (!consentir_margem_da_vram &&
+             ((uint64_t)livre <= MARGEM_DA_VRAM_EM_BYTES ||
+              capacidade_em_bytes >
+                  (uint64_t)livre - MARGEM_DA_VRAM_EM_BYTES))) {
+            fprintf(stderr, "VRAM insuficiente para preservar margem de 512 MiB.\n");
+            (void)cuCtxSetCurrent(0);
+            cuDevicePrimaryCtxRelease(dispositivo);
+            return 0;
+        }
     }
     if (cuMemAlloc(&memoria, (size_t)capacidade_em_bytes) != CUDA_SUCCESS) {
         (void)cuCtxSetCurrent(0);
@@ -323,7 +340,8 @@ int preparar_meio_assincrono_cuda(
     figura = calloc(1, sizeof(*figura));
     if (figura == 0) return -ENOMEM;
     if (!criar_meio_cuda(&figura->meio, configuracao->indice_da_gpu,
-                         configuracao->capacidade_em_bytes)) {
+                         configuracao->capacidade_em_bytes,
+                         configuracao->consentir_margem_da_vram)) {
         free(figura);
         return -ENOMEM;
     }

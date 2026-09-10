@@ -14,7 +14,7 @@
 int escrever_carga_de_creacao(unsigned char *destino, size_t capacidade,
                               const struct configuracao_do_apparelho *figura)
 {
-    uint32_t campos[7];
+    uint32_t campos[8];
     size_t indice;
 
     if (destino == 0 || !configuracao_do_apparelho_e_valida(figura))
@@ -27,7 +27,8 @@ int escrever_carga_de_creacao(unsigned char *destino, size_t capacidade,
     campos[4] = (uint32_t)figura->profundidade_das_filas;
     campos[5] = figura->maior_operacao_em_bytes;
     campos[6] = figura->prazo_da_operacao_em_milissegundos;
-    for (indice = 0; indice < 7; indice++) {
+    campos[7] = (uint32_t)figura->consentir_margem_da_vram;
+    for (indice = 0; indice < 8; indice++) {
         destino[indice * 4] = (unsigned char)(campos[indice] >> 24);
         destino[indice * 4 + 1] = (unsigned char)(campos[indice] >> 16);
         destino[indice * 4 + 2] = (unsigned char)(campos[indice] >> 8);
@@ -47,12 +48,12 @@ int ler_carga_de_creacao(struct configuracao_do_apparelho *destino,
                          const unsigned char *origem, size_t quantidade)
 {
     struct configuracao_do_apparelho figura;
-    uint32_t campos[7];
+    uint32_t campos[8];
     size_t indice;
 
     if (destino == 0 || origem == 0) return -EINVAL;
     if (quantidade != TAMANHO_DA_CARGA_DE_CREACAO) return -EMSGSIZE;
-    for (indice = 0; indice < 7; indice++) {
+    for (indice = 0; indice < 8; indice++) {
         campos[indice] = (uint32_t)origem[indice * 4] << 24 |
                          (uint32_t)origem[indice * 4 + 1] << 16 |
                          (uint32_t)origem[indice * 4 + 2] << 8 |
@@ -66,6 +67,7 @@ int ler_carga_de_creacao(struct configuracao_do_apparelho *destino,
     figura.profundidade_das_filas = (int)campos[4];
     figura.maior_operacao_em_bytes = campos[5];
     figura.prazo_da_operacao_em_milissegundos = campos[6];
+    figura.consentir_margem_da_vram = (int)campos[7];
     if (!configuracao_do_apparelho_e_valida(&figura)) return -EINVAL;
     *destino = figura;
     return 0;

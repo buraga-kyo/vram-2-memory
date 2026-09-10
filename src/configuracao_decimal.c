@@ -20,7 +20,7 @@ int ler_configuracao_decimal(struct configuracao_do_apparelho *destino,
     int indice;
 
     if (destino == 0 || argumentos == 0 ||
-        (quantidade != 5 && quantidade != 6)) return -EINVAL;
+        (quantidade < 5 || quantidade > 7)) return -EINVAL;
     for (indice = 0; indice < quantidade; indice++) {
         if (!converter_numero_decimal(argumentos[indice], &numeros[indice]))
             return -EINVAL;
@@ -34,6 +34,7 @@ int ler_configuracao_decimal(struct configuracao_do_apparelho *destino,
     figura.maior_operacao_em_bytes = (uint32_t)numeros[3];
     figura.prazo_da_operacao_em_milissegundos = (uint32_t)numeros[4];
     figura.indice_da_gpu = (int)numeros[5];
+    figura.consentir_margem_da_vram = quantidade == 7 ? (int)numeros[6] : 0;
     if (!configuracao_do_apparelho_e_valida(&figura)) return -EINVAL;
     *destino = figura;
     return 0;
