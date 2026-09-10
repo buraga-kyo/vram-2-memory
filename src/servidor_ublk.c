@@ -787,6 +787,17 @@ int ordenar_termo_do_servidor_ublk(void)
     return 0;
 }
 
+int ordenar_termo_do_servidor_ublk_em_contexto(void *contexto)
+{
+    struct estado_do_servidor_ublk *servidor = contexto;
+
+    if (servidor == 0) return -EINVAL;
+    atomic_store_explicit(&termo_requerido, 1, memory_order_relaxed);
+    if (servidor->controle != 0)
+        (void)ordenar_parada_limitada_do_servidor(servidor);
+    return 0;
+}
+
 /*
  * LEMMA DA PORTA DE CONTROLE
  * Proposito: crear no núcleo o par de dispositivos ainda não publicado.
@@ -1026,6 +1037,9 @@ int executar_servidor_com_meio(
     int resultado_do_desmonte;
 
     if (governo == 0) return -EINVAL;
+    (void)pthread_mutex_lock(&governo->exclusao);
+    governo->contexto = &servidor;
+    (void)pthread_mutex_unlock(&governo->exclusao);
     servidor.governo = governo;
     resultado = preparar_servidor_ublk(
         &servidor, configuracao, empregar_cuda);
@@ -1052,6 +1066,9 @@ int executar_servidor_com_meio(
     }
     resultado_do_desmonte = desmontar_servidor_ublk(&servidor);
     if (resultado == 0) resultado = resultado_do_desmonte;
+    (void)pthread_mutex_lock(&governo->exclusao);
+    governo->contexto = 0;
+    (void)pthread_mutex_unlock(&governo->exclusao);
     return resultado;
 }
 

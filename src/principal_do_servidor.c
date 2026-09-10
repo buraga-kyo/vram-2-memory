@@ -95,8 +95,7 @@ int servir_meio_governado(
  */
 int terminar_cuda_governado(void *contexto)
 {
-    (void)contexto;
-    return ordenar_termo_do_servidor_ublk();
+    return ordenar_termo_do_servidor_ublk_em_contexto(contexto);
 }
 
 /*
