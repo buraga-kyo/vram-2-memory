@@ -141,6 +141,27 @@ static int preparar_portao_da_publicacao(
 }
 
 /*
+ * COROLARIO DA POSSE INICIAL
+ * Proposito: adquirir a memória fixada e o portão antes de qualquer fila.
+ * Effeitos: marca as duas posses ou desfaz a primeira falha.
+ * Retorno: zero ou erro negativo; o chamador conserva a restituição geral.
+ */
+static int adquirir_posses_iniciais_do_servidor(
+    struct estado_do_servidor_ublk *servidor)
+{
+    int resultado;
+
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) return -errno;
+    servidor->memoria_fixada = 1;
+    resultado = preparar_portao_da_publicacao(servidor);
+    if (resultado < 0) {
+        (void)munlockall();
+        servidor->memoria_fixada = 0;
+    }
+    return resultado;
+}
+
+/*
  * LEMMA DA CONCESSAO FIXAVEL
  * Proposito: confrontar a geometria com RLIMIT_MEMLOCK antes da reserva.
  * Pre-condições: configuração julgada. Effeitos: consulta e poderá informar.
@@ -955,13 +976,7 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
     servidor->operacoes_do_meio = servidor->empregar_cuda ?
         obter_operacoes_do_meio_cuda() : obter_operacoes_do_meio_simulado();
     /* O servidor de swap jámais poderá depender do proprio dispositivo. */
-    if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
-        resultado = -errno;
-        desmontar_servidor_ublk(servidor);
-        return resultado;
-    }
-    servidor->memoria_fixada = 1;
-    resultado = preparar_portao_da_publicacao(servidor);
+    resultado = adquirir_posses_iniciais_do_servidor(servidor);
     if (resultado < 0) {
         desmontar_servidor_ublk(servidor);
         return resultado;
