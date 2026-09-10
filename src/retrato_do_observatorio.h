@@ -9,6 +9,7 @@
 
 /* Cada fila escreve seus proprios atomos; o observador apenas os contempla. */
 struct contadores_da_fila {
+    atomic_flag colheita_em_curso;
     atomic_uint_fast64_t bytes_lidos;
     atomic_uint_fast64_t bytes_escriptos;
     atomic_uint_fast64_t operacoes_concluidas;
