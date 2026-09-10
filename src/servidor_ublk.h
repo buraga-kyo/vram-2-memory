@@ -35,4 +35,6 @@ int executar_servidor_cuda(
  */
 int ordenar_termo_do_servidor_ublk(void);
 
+int ordenar_termo_do_servidor_ublk_em_contexto(void *contexto);
+
 #endif
