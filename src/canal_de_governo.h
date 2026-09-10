@@ -3,6 +3,8 @@
 
 #include "protocolo_de_governo.h"
 
+#include <stdint.h>
+
 /* A mensagem recebida possue a carga até sua restituição explícita. */
 struct mensagem_de_governo {
     struct cabecalho_de_governo cabecalho;
@@ -28,6 +30,10 @@ int enviar_mensagem_de_governo(int descritor, uint16_t operacao,
  */
 int receber_mensagem_de_governo(int descritor,
                                 struct mensagem_de_governo *destino);
+
+int receber_mensagem_de_governo_com_prazo(
+    int descritor, struct mensagem_de_governo *destino,
+    uint64_t prazo_absoluto_em_nanossegundos);
 
 /*
  * Proposito: restituir a carga e reduzir a mensagem á figura vazia.
