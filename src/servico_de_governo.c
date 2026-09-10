@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifndef PRAZO_DA_AUDIENCIA_EM_SEGUNDOS
@@ -29,6 +30,14 @@ static int atar_prazos_da_audiencia(int cliente)
     if (setsockopt(cliente, SOL_SOCKET, SO_SNDTIMEO, &prazo, sizeof(prazo)) != 0)
         return -errno;
     return 0;
+}
+
+static uint64_t prazo_da_mensagem(void)
+{
+    struct timespec agora;
+    if (clock_gettime(CLOCK_MONOTONIC, &agora) != 0) return 0;
+    return (uint64_t)agora.tv_sec * 1000000000ULL + agora.tv_nsec +
+           (uint64_t)PRAZO_DA_AUDIENCIA_EM_SEGUNDOS * 1000000000ULL;
 }
 
 /*
@@ -73,6 +82,7 @@ int atender_cliente_do_governo(int tomada_servidora,
     uint32_t quantidade = 0;
     int cliente;
     int resultado;
+    uint64_t prazo;
 
     if (falha_irrecuperavel != 0) *falha_irrecuperavel = 1;
     if (tomada_servidora < 0 || governo == 0) return -EINVAL;
@@ -86,8 +96,10 @@ int atender_cliente_do_governo(int tomada_servidora,
         return 0;
     }
     resultado = atar_prazos_da_audiencia(cliente);
+    prazo = prazo_da_mensagem();
     if (resultado == 0)
-        resultado = receber_mensagem_de_governo(cliente, &mensagem);
+        resultado = receber_mensagem_de_governo_com_prazo(
+            cliente, &mensagem, prazo);
     if (resultado == 0) resultado = cumprir_ordem_da_instancia(
         governo, &mensagem, resposta, sizeof(resposta), &quantidade);
     if (resultado == 0) resultado = enviar_mensagem_de_governo(
