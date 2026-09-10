@@ -24,6 +24,8 @@ int configuracao_do_apparelho_e_valida(
         configuracao->capacidade_em_bytes == 0 ||
         configuracao->quantidade_de_filas <= 0 ||
         configuracao->profundidade_das_filas <= 0 ||
+        (configuracao->consentir_margem_da_vram != 0 &&
+         configuracao->consentir_margem_da_vram != 1) ||
         configuracao->maior_operacao_em_bytes == 0 ||
         configuracao->prazo_da_operacao_em_milissegundos == 0) {
         return 0;

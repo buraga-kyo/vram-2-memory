@@ -12,11 +12,11 @@
 int main(void)
 {
     const struct configuracao_do_apparelho original = {
-        1, UINT64_C(65536), 2, 4, UINT32_C(8192), UINT32_C(1000)
+        1, UINT64_C(65536), 2, 4, UINT32_C(8192), UINT32_C(1000), 0
     };
     const unsigned char esperado[TAMANHO_DA_CARGA_DE_CREACAO] = {
         0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2,
-        0, 0, 0, 4, 0, 0, 32, 0, 0, 0, 3, 232
+        0, 0, 0, 4, 0, 0, 32, 0, 0, 0, 3, 232, 0, 0, 0, 0
     };
     unsigned char carga[TAMANHO_DA_CARGA_DE_CREACAO];
     struct configuracao_do_apparelho recebida = {0};

@@ -5,7 +5,7 @@
 
 #include <stddef.h>
 
-#define TAMANHO_DA_CARGA_DE_CREACAO 28U
+#define TAMANHO_DA_CARGA_DE_CREACAO 32U
 
 /*
  * Proposito: escrever uma configuração na carga canônica da ordem create.

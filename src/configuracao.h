@@ -18,6 +18,7 @@ struct configuracao_do_apparelho {
     int profundidade_das_filas;
     uint32_t maior_operacao_em_bytes;
     uint32_t prazo_da_operacao_em_milissegundos;
+    int consentir_margem_da_vram;
 };
 
 /*

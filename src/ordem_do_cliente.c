@@ -27,7 +27,7 @@ int formar_ordem_do_cliente(struct ordem_do_cliente *destino,
         return -ERANGE;
     figura.indice = (unsigned int)indice;
     if (strcmp(argumentos[0], "create") == 0) {
-        if (quantidade != 7 && quantidade != 8) return -EINVAL;
+        if (quantidade < 7 || quantidade > 9) return -EINVAL;
         resultado = ler_configuracao_decimal(
             &configuracao, quantidade - 2, argumentos + 2);
         if (resultado < 0) return resultado;
