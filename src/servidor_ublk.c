@@ -1,6 +1,8 @@
 #include "servidor_ublk.h"
 #include "alvo_ublk.h"
+#ifndef VRAM_SEM_CUDA
 #include "meio_cuda.h"
+#endif
 #include "meio_simulado.h"
 #include "monitor_do_observatorio.h"
 #include "observador_de_si.h"
@@ -692,6 +694,7 @@ const struct ublksrv_tgt_type *obter_operacoes_do_alvo_ublk(void)
  * Effeitos: nenhum. Retorno: buffer exacto ou nulo na identidade estranha.
  * Razão: o caminho exterior escolhe memória, mas jámais a reserva.
  */
+#ifndef VRAM_SEM_CUDA
 static void *ceder_buffer_cuda_preparado(const struct ublksrv_queue *fila,
                                          int etiqueta, int tamanho)
 {
@@ -736,6 +739,7 @@ const struct ublksrv_tgt_type *obter_operacoes_do_alvo_cuda(void)
 
     return &operacoes;
 }
+#endif
 
 /*
  * COROLLARIO DA ORDEM DE PARADA
@@ -798,10 +802,18 @@ int abrir_controle_ublk(struct estado_do_servidor_ublk *servidor)
         (unsigned short)servidor->configuracao->quantidade_de_filas;
     dados.queue_depth =
         (unsigned short)servidor->configuracao->profundidade_das_filas;
+#ifdef VRAM_SEM_CUDA
+    if (servidor->empregar_cuda) return -ENOTSUP;
+#endif
+#ifdef VRAM_SEM_CUDA
+    dados.tgt_type = "vram_2_memory";
+    dados.tgt_ops = obter_operacoes_do_alvo_ublk();
+#else
     dados.tgt_type = servidor->empregar_cuda ?
         "vram_2_memory_cuda" : "vram_2_memory";
     dados.tgt_ops = servidor->empregar_cuda ?
         obter_operacoes_do_alvo_cuda() : obter_operacoes_do_alvo_ublk();
+#endif
     dados.run_dir = ublksrv_get_pid_dir();
     resultado = preparar_directorio_de_execucao(dados.run_dir);
     if (resultado < 0) return resultado;
@@ -908,6 +920,12 @@ int preparar_servidor_ublk(struct estado_do_servidor_ublk *servidor,
     (void)pthread_mutex_unlock(&exclusao_do_governo);
     servidor->configuracao = configuracao;
     servidor->empregar_cuda = empregar_cuda != 0;
+#ifdef VRAM_SEM_CUDA
+    if (servidor->empregar_cuda) {
+        desmontar_servidor_ublk(servidor);
+        return -ENOTSUP;
+    }
+#endif
     servidor->operacoes_do_meio = servidor->empregar_cuda ?
         obter_operacoes_do_meio_cuda() : obter_operacoes_do_meio_simulado();
     /* O servidor de swap jámais poderá depender do proprio dispositivo. */
