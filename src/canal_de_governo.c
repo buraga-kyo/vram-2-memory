@@ -1,8 +1,33 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include "canal_de_governo.h"
 
 #include <errno.h>
+#include <poll.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <time.h>
+
+static int esperar_leitura(int descritor, uint64_t prazo)
+{
+    struct timespec agora;
+    struct pollfd espera = { .fd = descritor, .events = POLLIN };
+    uint64_t restante;
+    int milissegundos;
+    if (prazo == 0) return 0;
+    if (clock_gettime(CLOCK_MONOTONIC, &agora) != 0) return -errno;
+    restante = (uint64_t)agora.tv_sec * 1000000000ULL +
+               (uint64_t)agora.tv_nsec;
+    if (restante >= prazo) return -ETIMEDOUT;
+    restante = prazo - restante;
+    milissegundos = (int)(restante / 1000000ULL);
+    if (milissegundos == 0) milissegundos = 1;
+    while (poll(&espera, 1, milissegundos) < 0 && errno == EINTR) {}
+    if (espera.revents == 0) return -ETIMEDOUT;
+    if (espera.revents & (POLLERR | POLLNVAL)) return -EIO;
+    return 0;
+}
 
 /*
  * Proposito: escrever exactamente a extensão promettida numa tomada.
@@ -56,8 +81,9 @@ int enviar_mensagem_de_governo(int descritor, uint16_t operacao,
  * Effeitos: adquire carga somente após validar o cabeçalho. Retorno: zero ou erro.
  * Razão: cada laço conhece a fronteira antes de pedir o próximo octeto.
  */
-int receber_mensagem_de_governo(int descritor,
-                                struct mensagem_de_governo *destino)
+int receber_mensagem_de_governo_com_prazo(
+    int descritor, struct mensagem_de_governo *destino,
+    uint64_t prazo_absoluto_em_nanossegundos)
 {
     unsigned char octetos[TAMANHO_DO_CABECALHO_DE_GOVERNO];
     struct cabecalho_de_governo cabecalho;
@@ -66,6 +92,8 @@ int receber_mensagem_de_governo(int descritor,
     int resultado;
     if (descritor < 0 || destino == 0 || destino->carga != 0) return -EINVAL;
     while (recebidos < sizeof(octetos)) {
+        resultado = esperar_leitura(descritor, prazo_absoluto_em_nanossegundos);
+        if (resultado < 0) return resultado;
         ssize_t parcela = recv(descritor, octetos + recebidos,
                                sizeof(octetos) - recebidos, 0);
         if (parcela < 0) {
@@ -82,6 +110,8 @@ int receber_mensagem_de_governo(int descritor,
         if (carga == 0) return -ENOMEM;
         recebidos = 0;
         while (recebidos < cabecalho.quantidade_da_carga) {
+            resultado = esperar_leitura(descritor, prazo_absoluto_em_nanossegundos);
+            if (resultado < 0) { free(carga); return resultado; }
             ssize_t parcela = recv(
                 descritor, carga + recebidos,
                 (size_t)cabecalho.quantidade_da_carga - recebidos, 0);
@@ -97,6 +127,12 @@ int receber_mensagem_de_governo(int descritor,
     destino->cabecalho = cabecalho;
     destino->carga = carga;
     return 0;
+}
+
+int receber_mensagem_de_governo(int descritor,
+                                struct mensagem_de_governo *destino)
+{
+    return receber_mensagem_de_governo_com_prazo(descritor, destino, 0);
 }
 
 /*
