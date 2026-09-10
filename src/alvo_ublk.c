@@ -30,6 +30,25 @@ static int julgar_resultado_do_meio(struct contexto_da_fila_ublk *contexto,
 }
 
 /*
+ * COROLARIO DA FRONTEIRA UBLK
+ * Proposito: converter a descrição exterior em geometria comum.
+ * Effeitos: nenhuma fila ou meio é tocado nesta passagem.
+ * Retorno: zero ou domínio inválido.
+ */
+static int ler_geometria_da_requisicao_ublk(
+    const struct ublksrv_io_desc *descritor, uint64_t *deslocamento,
+    uint32_t *quantidade, uint8_t *operacao)
+{
+    if (descritor == 0 || deslocamento == 0 || quantidade == 0 ||
+        operacao == 0 || descritor->nr_sectors > UINT32_MAX / 512U ||
+        descritor->start_sector > UINT64_MAX / 512U) return -EINVAL;
+    *quantidade = descritor->nr_sectors * 512U;
+    *deslocamento = descritor->start_sector * 512ULL;
+    *operacao = ublksrv_get_op(descritor);
+    return 0;
+}
+
+/*
  * Proposito: entregar ao ublk a sentença colhida do evento da etiqueta.
  * Pre-condições: registro conserva contexto, origem e identidade vivos.
  * Effeitos: mede, conclue, rearma e registra a operação na própria fila.
@@ -206,17 +225,15 @@ int tratar_requisicao_ublk(const struct ublksrv_queue *fila_exterior,
     if (fila_exterior == 0 || dados == 0 || dados->iod == 0) return -EINVAL;
     contexto = fila_exterior->private_data;
     descritor = dados->iod;
-    if (contexto == 0 || contexto->fila == 0 || dados->tag < 0 ||
-        descritor->nr_sectors > UINT32_MAX / 512U ||
-        descritor->start_sector > UINT64_MAX / 512U) return -EINVAL;
+    if (contexto == 0 || contexto->fila == 0 || dados->tag < 0) return -EINVAL;
     if (atomic_load_explicit(contexto->falha_terminal_do_servidor,
                              memory_order_relaxed)) {
         (void)ublksrv_complete_io(fila_exterior, (unsigned)dados->tag, -EIO);
         return -EIO;
     }
-    quantidade = descritor->nr_sectors * 512U;
-    deslocamento = descritor->start_sector * 512ULL;
-    operacao = ublksrv_get_op(descritor);
+    if (ler_geometria_da_requisicao_ublk(
+            descritor, &deslocamento, &quantidade, &operacao) < 0)
+        return -EINVAL;
     memoria = ublksrv_queue_get_io_buf(fila_exterior, dados->tag);
     if (quantidade != 0 && memoria == 0) return -EFAULT;
     registro = iniciar_requisicao_na_fila(
