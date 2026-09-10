@@ -95,6 +95,8 @@ int colher_retrato_do_observatorio(
     if (retrato == 0 || filas == 0 || quantidade_de_filas == 0 ||
         instante_actual_em_nanossegundos < instante_anterior_em_nanossegundos)
         return 0;
+    if (atomic_flag_test_and_set_explicit(
+            &filas[0].colheita_em_curso, memory_order_acquire)) return 0;
     figura.instante_monotonico_em_nanossegundos =
         instante_actual_em_nanossegundos;
     figura.duracao_da_janella_em_nanossegundos =
@@ -126,6 +128,8 @@ int colher_retrato_do_observatorio(
     figura.latencia_p99_em_microssegundos = calcular_percentil(
         histogramma, amostras_de_latencia, 99);
     *retrato = figura;
+    atomic_flag_clear_explicit(&filas[0].colheita_em_curso,
+                               memory_order_release);
     return 1;
 }
 
