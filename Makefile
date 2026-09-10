@@ -45,7 +45,7 @@ DEMONSTRACAO := $(DIRECTORIO_DA_CONSTRUCAO)/demonstrar_observatorio
 .PHONY: provar provar_integracao provar_vm demonstrar_simulacao provar_cuda provar_pressao preparar_ublk preparar_cuda preparar_cliente limpar
 
 provar: $(PROVAS)
-	@for prova in $(PROVAS); do $$prova; done
+	@for prova in $(PROVAS); do echo "PROVA: $$prova"; $$prova || exit $$?; done
 
 provar_integracao: provar provar_vm
 
