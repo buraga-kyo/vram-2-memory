@@ -764,10 +764,12 @@ const struct ublksrv_tgt_type *obter_operacoes_do_alvo_cuda(void)
 void ordenar_parada_do_servidor_ublk(int sinal_recebido)
 {
     (void)sinal_recebido;
-    if (servidor_em_exercicio != 0 &&
-        servidor_em_exercicio->controle != 0) {
-        (void)ordenar_parada_limitada_do_servidor(servidor_em_exercicio);
-    }
+    atomic_store_explicit(&termo_requerido, 1, memory_order_relaxed);
+}
+
+int termo_do_servidor_ublk_foi_requerido(void)
+{
+    return atomic_load_explicit(&termo_requerido, memory_order_relaxed);
 }
 
 /*

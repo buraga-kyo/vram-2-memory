@@ -4,6 +4,7 @@
 #include "servico_de_governo.h"
 #include "canal_de_governo.h"
 #include "ordens_da_instancia.h"
+#include "servidor_ublk.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -88,7 +89,13 @@ int atender_cliente_do_governo(int tomada_servidora,
     if (tomada_servidora < 0 || governo == 0) return -EINVAL;
     do {
         cliente = accept4(tomada_servidora, 0, 0, SOCK_CLOEXEC);
-    } while (cliente < 0 && errno == EINTR);
+    } while (cliente < 0 && errno == EINTR &&
+             !termo_do_servidor_ublk_foi_requerido());
+    if (cliente < 0 && errno == EINTR &&
+        termo_do_servidor_ublk_foi_requerido()) {
+        if (falha_irrecuperavel != 0) *falha_irrecuperavel = 1;
+        return -EINTR;
+    }
     if (cliente < 0) return -errno;
     if (falha_irrecuperavel != 0) *falha_irrecuperavel = 0;
     if (!par_do_governo_e_aceito(cliente)) {
