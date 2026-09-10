@@ -10,6 +10,7 @@
 #include "plano_da_memoria.h"
 #include "reserva_de_buffers.h"
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <pthread.h>
 #include <sched.h>
@@ -22,6 +23,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <string.h>
 #include <ublksrv.h>
 #include <ublksrv_utils.h>
 #include <unistd.h>
@@ -251,12 +253,20 @@ static void *observar_servidor_ublk(void *argumento)
     uint64_t instante_anterior = ler_instante_monotonico();
     char quadro[2048];
     char voz[256];
+    char saida[2304];
+    int flags_originais = fcntl(STDERR_FILENO, F_GETFL);
+
+    if (flags_originais < 0 || fcntl(
+            STDERR_FILENO, F_SETFL, flags_originais | O_NONBLOCK) < 0)
+        return argumento;
 
     while (!atomic_load_explicit(&servidor->ordenar_termo_do_observatorio,
                                  memory_order_relaxed)) {
         uint64_t instante_actual = ler_instante_monotonico();
-        size_t tamanho;
+        size_t tamanho_do_quadro;
+        size_t tamanho_da_voz;
         ssize_t escriptos;
+        size_t tamanho_da_saida;
 
         anterior.instante_monotonico_em_nanossegundos = instante_anterior;
         if (!colher_retrato_do_observatorio(
@@ -275,30 +285,33 @@ static void *observar_servidor_ublk(void *argumento)
                 &janella, &retrato, &anterior)) break;
         configuracao.largura_em_colunas = descobrir_largura_do_observatorio();
         configuracao.empregar_cor = isatty(STDERR_FILENO);
-        tamanho = escrever_quadro_do_observatorio(
+        tamanho_do_quadro = escrever_quadro_do_observatorio(
             quadro, sizeof(quadro), &janella, &configuracao);
-        escriptos = tamanho == 0 ? -1 :
-            write(STDERR_FILENO, quadro, tamanho);
-        if (escriptos < 0 || (size_t)escriptos != tamanho)
-            atomic_fetch_add_explicit(&servidor->contadores[0].amostras_perdidas,
-                                      1, memory_order_relaxed);
         configuracao_da_voz.modo = configuracao.empregar_cor ?
             MODO_DA_NARRACAO_THEATRAL : MODO_DA_NARRACAO_SOBRIO;
         configuracao_da_voz.idade_maxima_em_nanossegundos = 2000000000ULL;
         configuracao_da_voz.p99_alarmante_em_microssegundos =
             (uint64_t)servidor->configuracao
                 ->prazo_da_operacao_em_milissegundos * 1000ULL;
-        tamanho = narrar_observador_de_si(
+        tamanho_da_voz = narrar_observador_de_si(
             voz, sizeof(voz), &janella, &configuracao_da_voz, instante_actual);
-        escriptos = tamanho == SIZE_MAX ? -1 :
-            write(STDERR_FILENO, voz, tamanho);
-        if (escriptos < 0 || (size_t)escriptos != tamanho)
+        tamanho_da_saida = tamanho_do_quadro == SIZE_MAX ||
+            tamanho_da_voz == SIZE_MAX ? 0 : tamanho_do_quadro + tamanho_da_voz;
+        if (tamanho_da_saida != 0 && tamanho_da_saida <= sizeof(saida)) {
+            memcpy(saida, quadro, tamanho_do_quadro);
+            memcpy(saida + tamanho_do_quadro, voz, tamanho_da_voz);
+            if (tamanho_da_saida <= sizeof(saida)) {
+                escriptos = write(STDERR_FILENO, saida, tamanho_da_saida);
+            } else escriptos = -1;
+        } else escriptos = -1;
+        if (escriptos < 0 || (size_t)escriptos != tamanho_da_saida)
             atomic_fetch_add_explicit(&servidor->contadores[0].amostras_perdidas,
                                       1, memory_order_relaxed);
         anterior = retrato;
         instante_anterior = instante_actual;
         nanosleep(&repouso, 0);
     }
+    (void)fcntl(STDERR_FILENO, F_SETFL, flags_originais);
     return argumento;
 }
 
