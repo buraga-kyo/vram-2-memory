@@ -26,7 +26,8 @@ struct transportador_cuda {
  * Razão: nenhuma reserva CUDA poderá nascer no caminho crítico.
  */
 int criar_meio_cuda(struct meio_cuda *meio, int indice_da_gpu,
-                    uint64_t capacidade_em_bytes);
+                    uint64_t capacidade_em_bytes,
+                    int consentir_margem_da_vram);
 
 /*
  * Proposito: devolver a VRAM e reduzir o meio á figura vazia.
