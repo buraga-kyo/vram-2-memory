@@ -6,6 +6,27 @@ set -eu
 codigo_final=1
 processo_do_servidor=""
 
+provar_swap_por_prazo()
+{
+    alvo=$1
+    identidade=$2
+    duracao=${DURACAO_DO_SWAP_EM_SEGUNDOS:-1800}
+    memoria_mib=$(awk '/MemTotal/ { print int($2 * 80 / 100 / 1024) }' /proc/meminfo)
+    test "$(cat "/sys/class/block/${alvo##*/}/dev")" = "$identidade"
+    mkswap "$alvo"
+    swapon -p -2 "$alvo"
+    echo "VM: swap activo por ${duracao}s; pressão=${memoria_mib}MiB."
+    /bin/pressionar_memoria "$memoria_mib" "$duracao" &
+    pressor=$!
+    while kill -0 "$pressor" 2>/dev/null; do
+        awk '/MemAvailable|SwapTotal|SwapFree/ { print }' /proc/meminfo
+        sleep 30
+    done
+    wait "$pressor"
+    swapoff "$alvo"
+    ! grep -F -- "$alvo" /proc/swaps
+}
+
 # Proposito: restituir a instância e entregar a sentença ao hospedeiro.
 restituir_machina()
 {
