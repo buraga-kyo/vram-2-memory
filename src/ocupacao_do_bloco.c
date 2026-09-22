@@ -4,6 +4,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/sysmacros.h>
+
+static int swap_conserva_bloco(unsigned int maior_esperado, unsigned int menor_esperado)
+{
+    char caminho[4096];
+    char linha[8192];
+    struct stat estado;
+    FILE *folha = fopen("/proc/swaps", "r");
+    int primeira = 1;
+    if (folha == 0) return -errno;
+    while (fgets(linha, sizeof(linha), folha) != 0) {
+        if (primeira) { primeira = 0; continue; }
+        if (sscanf(linha, "%4095s", caminho) != 1) continue;
+        if (stat(caminho, &estado) == 0 && S_ISBLK(estado.st_mode) &&
+            major(estado.st_rdev) == maior_esperado &&
+            minor(estado.st_rdev) == menor_esperado) {
+            (void)fclose(folha);
+            return 1;
+        }
+    }
+    if (ferror(folha)) {
+        int erro = errno == 0 ? EIO : errno;
+        (void)fclose(folha);
+        return -erro;
+    }
+    return fclose(folha) == 0 ? 0 : -errno;
+}
 
 static int montagem_conserva_bloco(unsigned int maior, unsigned int menor)
 {
