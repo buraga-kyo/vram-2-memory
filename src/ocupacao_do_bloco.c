@@ -74,3 +74,25 @@ static int ler_identidade_do_nucleo(
     if (fclose(folha) != 0 && largura == 2) return -errno;
     return largura == 2 ? 0 : -EPROTO;
 }
+
+int bloco_esta_occupado(int identidade_ublk, char *causa, size_t capacidade)
+{
+    unsigned int maior, menor;
+    int resultado;
+
+    if (causa == 0 || capacidade == 0) return -EINVAL;
+    causa[0] = 0;
+    resultado = ler_identidade_do_nucleo(identidade_ublk, &maior, &menor);
+    if (resultado < 0) return resultado;
+    resultado = montagem_conserva_bloco(maior, menor);
+    if (resultado < 0) return resultado;
+    if (resultado) {
+        (void)snprintf(causa, capacidade, "montado %u:%u", maior, menor);
+        return 1;
+    }
+    resultado = swap_conserva_bloco(maior, menor);
+    if (resultado < 0) return resultado;
+    if (resultado)
+        (void)snprintf(causa, capacidade, "swap activo %u:%u", maior, menor);
+    return resultado;
+}
