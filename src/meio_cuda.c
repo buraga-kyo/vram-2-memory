@@ -133,15 +133,24 @@ int criar_meio_cuda(struct meio_cuda *meio, int indice_da_gpu,
 int destruir_meio_cuda(struct meio_cuda *meio)
 {
     CUresult resultado_do_desligamento;
+    uint64_t apagados = 0;
+    uint64_t inicio;
 
     if (meio == 0 || meio->contexto == 0) {
         return 1;
     }
+    inicio = instante_da_limpeza();
     if (cuCtxSetCurrent(meio->contexto) != CUDA_SUCCESS ||
+        (meio->memoria_da_gpu != 0 && !apagar_reserva_cuda(meio, &apagados)) ||
         (meio->memoria_da_gpu != 0 &&
          cuMemFree(meio->memoria_da_gpu) != CUDA_SUCCESS)) {
+        fprintf(stderr, "limpeza_cuda={\"ok\":false,\"bytes\":%llu}\n",
+                (unsigned long long)apagados);
         return 0;
     }
+    fprintf(stderr, "limpeza_cuda={\"ok\":true,\"bytes\":%llu,\"duracao_ns\":%llu}\n",
+            (unsigned long long)apagados,
+            (unsigned long long)(instante_da_limpeza() - inicio));
     meio->memoria_da_gpu = 0;
     meio->capacidade_em_bytes = 0;
     resultado_do_desligamento = cuCtxSetCurrent(0);
