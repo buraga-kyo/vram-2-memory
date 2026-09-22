@@ -20,11 +20,12 @@ static int escrever_estado_integral(
         "\"operacoes\":{\"leitura\":null,\"escripta\":null,\"zeragem\":null},"
         "\"medidas\":{\"bytes\":null,\"erros\":null,\"prazos\":null,"
         "\"p50_us\":null,\"p95_us\":null,\"p99_us\":null,\"perdidas\":null},"
-        "\"gpu\":null,\"controlador\":null,\"pcie\":null}",
+        "\"bloco\":{\"ublk_id\":%d},\"gpu\":null,\"controlador\":null,\"pcie\":null}",
         VERSAO_DO_SCHEMA_DO_ESTADO, nome_do_estado_do_governo(estado), resultado,
         (unsigned long long)figura->capacidade_em_bytes,
         figura->quantidade_de_filas, figura->profundidade_das_filas,
-        figura->maior_operacao_em_bytes, figura->prazo_da_operacao_em_milissegundos);
+        figura->maior_operacao_em_bytes, figura->prazo_da_operacao_em_milissegundos,
+        governo->identidade_do_bloco);
 }
 
 /*
