@@ -3,6 +3,30 @@
 #include <errno.h>
 #include <stdio.h>
 
+#define VERSAO_DO_SCHEMA_DO_ESTADO 1
+
+static int escrever_estado_integral(
+    unsigned char *resposta, size_t capacidade,
+    const struct governo_do_apparelho *governo,
+    enum estado_do_governo_do_apparelho estado, int resultado)
+{
+    const struct configuracao_do_apparelho *figura = &governo->configuracao;
+
+    return snprintf((char *)resposta, capacidade,
+        "{\"ok\":true,\"schema\":%d,\"estado\":\"%s\",\"resultado\":%d,"
+        "\"geometria\":{\"capacidade_bytes\":%llu,\"filas\":%d,"
+        "\"profundidade\":%d,\"operacao_maxima_bytes\":%u,\"prazo_ms\":%u},"
+        "\"memoria\":{\"vram_reservada_bytes\":null,\"ram_fixada_bytes\":null},"
+        "\"operacoes\":{\"leitura\":null,\"escripta\":null,\"zeragem\":null},"
+        "\"medidas\":{\"bytes\":null,\"erros\":null,\"prazos\":null,"
+        "\"p50_us\":null,\"p95_us\":null,\"p99_us\":null,\"perdidas\":null},"
+        "\"gpu\":null,\"controlador\":null,\"pcie\":null}",
+        VERSAO_DO_SCHEMA_DO_ESTADO, nome_do_estado_do_governo(estado), resultado,
+        (unsigned long long)figura->capacidade_em_bytes,
+        figura->quantidade_de_filas, figura->profundidade_das_filas,
+        figura->maior_operacao_em_bytes, figura->prazo_da_operacao_em_milissegundos);
+}
+
 /*
  * Proposito: converter o estado nativo em vocábulo exterior permanente.
  * Pre-condições: nenhuma. Effeitos: nenhum.

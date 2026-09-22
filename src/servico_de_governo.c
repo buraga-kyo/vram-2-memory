@@ -79,7 +79,7 @@ int atender_cliente_do_governo(int tomada_servidora,
                                int *falha_irrecuperavel)
 {
     struct mensagem_de_governo mensagem = {0};
-    unsigned char resposta[256];
+    unsigned char resposta[4096];
     uint32_t quantidade = 0;
     int cliente;
     int resultado;
