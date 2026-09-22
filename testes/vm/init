@@ -145,16 +145,7 @@ echo "VM: bloco $nome_do_bloco, par $major_e_minor, capacidade provada."
     --time_based=1 --runtime="$DURACAO_DO_FIO_EM_SEGUNDOS" \
     --group_reporting=1
 
-LD_LIBRARY_PATH=/lib /bin/vramdiskctl destroy 0
-wait "$processo_do_servidor"
-processo_do_servidor=""
-
-test ! -e "/sys/class/block/$nome_do_bloco"
-test ! -e "$dispositivo"
-test ! -e /run/vramdisk/0
-set -- /sys/class/block/ublkb*
-test ! -e "$1"
-rmmod ublk_drv
-
-echo "VM: operação inválida, fio e restituição demonstrados."
+provar_swap_por_prazo "$dispositivo" "$major_e_minor"
+provar_morte_abrupta "$dispositivo" "$major_e_minor" "$processo_do_servidor"
+echo "VM: integridade, swap e morte abrupta demonstrados."
 codigo_final="$CODIGO_DE_EXITO_DA_VM"
