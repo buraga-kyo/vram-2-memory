@@ -870,6 +870,17 @@ int abrir_controle_ublk(struct estado_do_servidor_ublk *servidor)
     if (resultado < 0) {
         ublksrv_ctrl_deinit(servidor->controle);
         servidor->controle = 0;
+    } else {
+        const struct ublksrv_ctrl_dev_info *informacao =
+            ublksrv_ctrl_get_dev_info(servidor->controle);
+        if (informacao == 0 || publicar_identidade_do_bloco(
+                servidor->governo, informacao->dev_id) < 0)
+            resultado = -ENODEV;
+        if (resultado < 0) {
+            (void)ublksrv_ctrl_del_dev(servidor->controle);
+            ublksrv_ctrl_deinit(servidor->controle);
+            servidor->controle = 0;
+        }
     }
     return resultado;
 }

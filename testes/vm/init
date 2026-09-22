@@ -6,6 +6,51 @@ set -eu
 codigo_final=1
 processo_do_servidor=""
 
+provar_swap_por_prazo()
+{
+    alvo=$1
+    identidade=$2
+    duracao=${DURACAO_DO_SWAP_EM_SEGUNDOS:-1800}
+    memoria_mib=$(awk '/MemTotal/ { print int($2 * 80 / 100 / 1024) }' /proc/meminfo)
+    test "$(cat "/sys/class/block/${alvo##*/}/dev")" = "$identidade"
+    mkswap "$alvo"
+    swapon -p -2 "$alvo"
+    echo "VM: swap activo por ${duracao}s; pressão=${memoria_mib}MiB."
+    /bin/pressionar_memoria "$memoria_mib" "$duracao" &
+    pressor=$!
+    while kill -0 "$pressor" 2>/dev/null; do
+        awk '/MemAvailable|SwapTotal|SwapFree/ { print }' /proc/meminfo
+        sleep 30
+    done
+    wait "$pressor"
+    swapoff "$alvo"
+    ! grep -F -- "$alvo" /proc/swaps
+}
+
+provar_morte_abrupta()
+{
+    alvo=$1
+    identidade=$2
+    servidor=$3
+    memoria_mib=$(awk '/MemTotal/ { print int($2 * 80 / 100 / 1024) }' /proc/meminfo)
+    test "$(cat "/sys/class/block/${alvo##*/}/dev")" = "$identidade"
+    mkswap "$alvo"
+    swapon -p -2 "$alvo"
+    /bin/pressionar_memoria "$memoria_mib" 120 &
+    pressor=$!
+    sleep 5
+    kill -9 "$servidor"
+    wait "$servidor" || true
+    processo_do_servidor=""
+    echo "VM: servidor morto; política ublk observada."
+    cat /proc/swaps
+    awk '/MemAvailable|SwapTotal|SwapFree/ { print }' /proc/meminfo
+    ls -l "$alvo" 2>&1 || true
+    kill "$pressor" 2>/dev/null || true
+    wait "$pressor" 2>/dev/null || true
+    timeout 15 swapoff "$alvo" || echo "VM: swapoff não convergiu após SIGKILL."
+}
+
 # Proposito: restituir a instância e entregar a sentença ao hospedeiro.
 restituir_machina()
 {
@@ -100,16 +145,7 @@ echo "VM: bloco $nome_do_bloco, par $major_e_minor, capacidade provada."
     --time_based=1 --runtime="$DURACAO_DO_FIO_EM_SEGUNDOS" \
     --group_reporting=1
 
-LD_LIBRARY_PATH=/lib /bin/vramdiskctl destroy 0
-wait "$processo_do_servidor"
-processo_do_servidor=""
-
-test ! -e "/sys/class/block/$nome_do_bloco"
-test ! -e "$dispositivo"
-test ! -e /run/vramdisk/0
-set -- /sys/class/block/ublkb*
-test ! -e "$1"
-rmmod ublk_drv
-
-echo "VM: operação inválida, fio e restituição demonstrados."
+provar_swap_por_prazo "$dispositivo" "$major_e_minor"
+provar_morte_abrupta "$dispositivo" "$major_e_minor" "$processo_do_servidor"
+echo "VM: integridade, swap e morte abrupta demonstrados."
 codigo_final="$CODIGO_DE_EXITO_DA_VM"

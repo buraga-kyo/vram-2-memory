@@ -72,6 +72,17 @@ int preparar_governo_do_apparelho(struct governo_do_apparelho *governo,
     governo->ordenar_termo = ordenar_termo;
     governo->contexto = contexto;
     governo->estado = ESTADO_DO_GOVERNO_ENCERRADO;
+    governo->identidade_do_bloco = -1;
+    return 0;
+}
+
+int publicar_identidade_do_bloco(
+    struct governo_do_apparelho *governo, int identidade)
+{
+    if (governo == 0 || identidade < 0) return -EINVAL;
+    (void)pthread_mutex_lock(&governo->exclusao);
+    governo->identidade_do_bloco = identidade;
+    (void)pthread_mutex_unlock(&governo->exclusao);
     return 0;
 }
 

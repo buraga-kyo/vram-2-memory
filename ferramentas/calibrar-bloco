@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+
+[ "$#" -eq 4 ] || {
+    echo "uso: $0 ROTULO DISPOSITIVO MAJOR:MINOR DURACAO_S" >&2
+    exit 2
+}
+rotulo=$1 dispositivo=$2 identidade=$3 duracao=$4
+[ "${CONFIRMAR_DESTRUICAO:-NAO}" = SIM ] || exit 1
+[ -b "$dispositivo" ] || exit 1
+[ "$(lsblk -dnro MAJ:MIN -- "$dispositivo")" = "$identidade" ] || exit 1
+echo "rotulo=$rotulo dispositivo=$dispositivo identidade=$identidade"
+uname -srvm
+lscpu | sed -n '/Model name\|CPU(s)\|Thread/p'
+lsblk -dnro NAME,MAJ:MIN,SIZE,ROTA -- "$dispositivo"
+for figura in qd1 concorrente sequencial; do
+    case $figura in
+        qd1) bloco=4k profundidade=1 trabalhos=1;;
+        concorrente) bloco=4k profundidade=32 trabalhos=4;;
+        sequencial) bloco=1m profundidade=32 trabalhos=1;;
+    esac
+    fio --name="$rotulo-$figura" --filename="$dispositivo" --direct=1 \
+        --rw=randrw --rwmixread=50 --bs="$bloco" --iodepth="$profundidade" \
+        --numjobs="$trabalhos" --runtime="$duracao" --time_based=1 \
+        --verify=crc32c --do_verify=1 --group_reporting=1 --output-format=json
+done

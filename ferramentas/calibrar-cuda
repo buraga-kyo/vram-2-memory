@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+
+destino=${1:-calibracao-cuda.json}
+command -v nvbandwidth >/dev/null || {
+    echo "limite: nvbandwidth ausente; instale a ferramenta oficial CUDA" >&2
+    exit 1
+}
+{
+    echo '{"ambiente":'
+    nvidia-smi --query-gpu=name,driver_version,pci.bus_id,pcie.link.gen.current,pcie.link.width.current,memory.total \
+        --format=csv,noheader,nounits | sed 's/.*/"&"/'
+    echo ',"cpu":'
+    lscpu -J
+    echo ',"nucleo":'
+    uname -srvm | sed 's/.*/"&"/'
+    echo ',"medidas":'
+    nvbandwidth --testcase=host_to_device_memcpy_ce \
+        --testcase=device_to_host_memcpy_ce --json
+    echo '}'
+} >"$destino"
+echo "$destino"

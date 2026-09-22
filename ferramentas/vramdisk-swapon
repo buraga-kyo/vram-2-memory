@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+uso() { echo "uso: $0 DISPOSITIVO MAJOR:MINOR PRIORIDADE [--tune]" >&2; exit 2; }
+[ "$#" -ge 3 ] && [ "$#" -le 4 ] || uso
+dispositivo=$1
+identidade=$2
+prioridade=$3
+[ -b "$dispositivo" ] || { echo "não é bloco: $dispositivo" >&2; exit 1; }
+observada=$(lsblk -dnro MAJ:MIN -- "$dispositivo")
+[ "$observada" = "$identidade" ] || {
+    echo "identidade divergente: esperado=$identidade observado=$observada" >&2
+    exit 1
+}
+case $prioridade in *[!0-9-]*|'') uso;; esac
+if [ "${4:-}" = --tune ]; then
+    cat /proc/sys/vm/swappiness /proc/sys/vm/page-cluster
+    echo "restitua com: sysctl vm.swappiness=VALOR vm.page-cluster=VALOR"
+fi
+printf 'CONFIRME %s para formar swap volátil: ' "$identidade" >&2
+IFS= read -r confirmacao
+[ "$confirmacao" = "$identidade" ] || exit 1
+mkswap -- "$dispositivo"
+swapon --priority "$prioridade" -- "$dispositivo"
+grep -F -- "$dispositivo" /proc/swaps

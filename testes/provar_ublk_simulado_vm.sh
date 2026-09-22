@@ -51,6 +51,8 @@ cc -std=c11 -Wall -Wextra -Wpedantic -Werror -static \
     -o "$artefactos/provar_operacao_invalida"
 cc -std=c11 -Wall -Wextra -Wpedantic -Werror -static \
     "$directorio_da_vm/encerrar_vm.c" -o "$artefactos/encerrar_vm"
+cc -std=c11 -Wall -Wextra -Wpedantic -Werror -static \
+    "$directorio_da_vm/pressionar_memoria.c" -o "$artefactos/pressionar_memoria"
 "$directorio_da_vm/preparar_fio_estatico.sh" "$artefactos/fio"
 
 mkdir -p "$raiz_do_initramfs/bin" "$raiz_do_initramfs/lib/modules"
@@ -73,6 +75,8 @@ install -m 0755 "$artefactos/provar_operacao_invalida" \
     "$raiz_do_initramfs/bin/provar_operacao_invalida"
 install -m 0755 "$artefactos/encerrar_vm" \
     "$raiz_do_initramfs/bin/encerrar_vm"
+install -m 0755 "$artefactos/pressionar_memoria" \
+    "$raiz_do_initramfs/bin/pressionar_memoria"
 zstd -q -d -c "$modulo_ublk" > "$raiz_do_initramfs/lib/modules/ublk_drv.ko"
 
 directorio_de_libublk=$(PKG_CONFIG_PATH="$pkg_config_do_ublk" \

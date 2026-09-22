@@ -1,0 +1,26 @@
+[Unit]
+Description=Bloco volátil VRAM, instância %i
+After=local-fs.target
+ConditionPathExists=/etc/vramdisk/%i.conf
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/vramdisk/%i.conf
+RuntimeDirectory=vramdisk
+RuntimeDirectoryMode=0750
+ExecStart=/usr/local/sbin/vramdiskd --root /run/vramdisk --backend ${MEIO} %i
+ExecStop=/usr/local/bin/vramdiskctl --root /run/vramdisk destroy %i
+LimitMEMLOCK=1G
+WatchdogSec=0
+TimeoutStopSec=15s
+KillMode=mixed
+OOMScoreAdjust=-500
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_UNIX
+ReadWritePaths=/run/vramdisk /run/ublksrvd
+
+[Install]
+WantedBy=multi-user.target

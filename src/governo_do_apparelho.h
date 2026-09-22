@@ -28,6 +28,7 @@ struct governo_do_apparelho {
     enum estado_do_governo_do_apparelho estado;
     int resultado;
     int fio_nascido;
+    int identidade_do_bloco;
 };
 
 /*
@@ -66,6 +67,10 @@ int publicar_estado_operacional_do_apparelho(
 int contemplar_apparelho_governado(
     struct governo_do_apparelho *governo,
     enum estado_do_governo_do_apparelho *estado, int *resultado);
+
+/* Publica a identidade ublk devolvida pelo núcleo; valor negativo significa ausência. */
+int publicar_identidade_do_bloco(
+    struct governo_do_apparelho *governo, int identidade);
 
 /*
  * Proposito: ordenar termo e reunir exactamente o fio proprietário.
