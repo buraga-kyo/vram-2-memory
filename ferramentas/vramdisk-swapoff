@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+[ "$#" -eq 2 ] || { echo "uso: $0 DISPOSITIVO MAJOR:MINOR" >&2; exit 2; }
+dispositivo=$1
+identidade=$2
+[ -b "$dispositivo" ] || { echo "não é bloco: $dispositivo" >&2; exit 1; }
+observada=$(lsblk -dnro MAJ:MIN -- "$dispositivo")
+[ "$observada" = "$identidade" ] || {
+    echo "identidade divergente: esperado=$identidade observado=$observada" >&2
+    exit 1
+}
+grep -F -- "$dispositivo" /proc/swaps >/dev/null || {
+    echo "swap não activo: $identidade" >&2
+    exit 1
+}
+printf 'CONFIRME %s para remover swap: ' "$identidade" >&2
+IFS= read -r confirmacao
+[ "$confirmacao" = "$identidade" ] || exit 1
+swapoff -- "$dispositivo"
+if grep -F -- "$dispositivo" /proc/swaps >/dev/null; then
+    echo "swap permaneceu activo: $identidade" >&2
+    exit 1
+fi
+echo "swap removido: $identidade"
