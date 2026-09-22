@@ -84,6 +84,14 @@ int cumprir_ordem_da_instancia(
     if (contemplar_apparelho_governado(
             governo, &estado, &resultado_do_servico) < 0 && erro == 0)
         erro = -EINVAL;
+    if (mensagem->cabecalho.operacao == OPERACAO_DE_GOVERNO_CONTEMPLAR &&
+        erro == 0) {
+        tamanho = escrever_estado_integral(
+            resposta, capacidade, governo, estado, resultado_do_servico);
+        if (tamanho < 0 || (size_t)tamanho >= capacidade) return -ENOBUFS;
+        *quantidade = (uint32_t)tamanho;
+        return 0;
+    }
     tamanho = snprintf((char *)resposta, capacidade,
         "{\"ok\":%s,\"estado\":\"%s\",\"erro\":%d,\"resultado\":%d}",
         erro == 0 ? "true" : "false", nome_do_estado_do_governo(estado),
