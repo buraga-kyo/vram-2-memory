@@ -2,6 +2,32 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static int montagem_conserva_bloco(unsigned int maior, unsigned int menor)
+{
+    char chave[48];
+    char *linha = 0;
+    size_t capacidade = 0;
+    FILE *folha;
+    int achou = 0;
+    int largura;
+
+    largura = snprintf(chave, sizeof(chave), " %u:%u ", maior, menor);
+    if (largura < 0 || (size_t)largura >= sizeof(chave)) return -EOVERFLOW;
+    folha = fopen("/proc/self/mountinfo", "r");
+    if (folha == 0) return -errno;
+    while (getline(&linha, &capacidade, folha) >= 0) {
+        if (strstr(linha, chave) != 0) {
+            achou = 1;
+            break;
+        }
+    }
+    free(linha);
+    if (fclose(folha) != 0 && !achou) return -errno;
+    return achou;
+}
 
 static int ler_identidade_do_nucleo(
     int identidade_ublk, unsigned int *maior, unsigned int *menor)
