@@ -1,5 +1,6 @@
 #include "ordens_da_instancia.h"
 #include "carga_de_creacao.h"
+#include "ocupacao_do_bloco.h"
 #include <errno.h>
 #include <stdio.h>
 
@@ -63,6 +64,7 @@ int cumprir_ordem_da_instancia(
     struct configuracao_do_apparelho configuracao;
     enum estado_do_governo_do_apparelho estado = ESTADO_DO_GOVERNO_ENCERRADO;
     int resultado_do_servico = 0;
+    char causa[96];
     int erro = 0;
     int tamanho;
     if (governo == 0 || mensagem == 0 || resposta == 0 || quantidade == 0)
@@ -78,7 +80,10 @@ int cumprir_ordem_da_instancia(
         break;
     case OPERACAO_DE_GOVERNO_DESTRUIR:
         if (mensagem->cabecalho.quantidade_da_carga != 0) erro = -EMSGSIZE;
-        else erro = destruir_apparelho_governado(governo);
+        else erro = bloco_esta_occupado(
+            governo->identidade_do_bloco, causa, sizeof(causa));
+        if (erro == 1) erro = -EBUSY;
+        else if (erro == 0) erro = destruir_apparelho_governado(governo);
         break;
     default: erro = -EOPNOTSUPP;
     }

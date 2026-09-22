@@ -27,6 +27,7 @@ FONTES_DO_SERVIDOR := src/principal_do_servidor.c src/instancia_do_servidor.c \
 	src/morada_do_governo.c src/registro_do_governo.c src/tomada_do_governo.c \
 	src/governo_do_apparelho.c src/servico_de_governo.c src/canal_de_governo.c \
 	src/protocolo_de_governo.c src/ordens_da_instancia.c src/carga_de_creacao.c \
+	src/ocupacao_do_bloco.c \
 	src/servidor_ublk.c src/alvo_ublk.c src/configuracao.c src/numero_decimal.c \
 	src/parada_limitada_ublk.c \
 	src/estado_da_requisicao.c src/plano_da_memoria.c src/reserva_de_buffers.c \
@@ -88,7 +89,8 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_governo_do_apparelho: \
 	$(COMPILADOR) $(AVISOS) -pthread $^ -o $@
 
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_ordens_da_instancia: testes/provar_ordens_da_instancia.c \
-		src/ordens_da_instancia.c src/governo_do_apparelho.c src/carga_de_creacao.c \
+	src/ordens_da_instancia.c src/governo_do_apparelho.c src/carga_de_creacao.c \
+	src/ocupacao_do_bloco.c \
 		src/configuracao.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) -pthread $^ -o $@
 
@@ -134,6 +136,7 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_tomada_do_governo: \
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_porteiro_do_governo: testes/provar_porteiro_do_governo.c \
 		src/servico_de_governo.c src/canal_de_governo.c src/protocolo_de_governo.c \
 		src/ordens_da_instancia.c src/governo_do_apparelho.c src/carga_de_creacao.c \
+		src/ocupacao_do_bloco.c \
 		src/configuracao.c src/tomada_do_governo.c | $(DIRECTORIO_DA_CONSTRUCAO)
 	$(COMPILADOR) $(AVISOS) -D_GNU_SOURCE -DPRAZO_DA_AUDIENCIA_EM_SEGUNDOS=1 -pthread $^ -o $@
 
@@ -145,7 +148,8 @@ $(DIRECTORIO_DA_CONSTRUCAO)/provar_observatorio: testes/provar_observatorio.c \
 $(DIRECTORIO_DA_CONSTRUCAO)/provar_servico_de_governo: \
 		testes/provar_servico_de_governo.c src/servico_de_governo.c \
 		src/canal_de_governo.c src/protocolo_de_governo.c \
-		src/ordens_da_instancia.c src/carga_de_creacao.c \
+	src/ordens_da_instancia.c src/carga_de_creacao.c \
+	src/ocupacao_do_bloco.c \
 		src/instancia_do_servidor.c src/morada_do_governo.c \
 		src/registro_do_governo.c src/tomada_do_governo.c \
 		src/governo_do_apparelho.c src/configuracao.c | $(DIRECTORIO_DA_CONSTRUCAO)
