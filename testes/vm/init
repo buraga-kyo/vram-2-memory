@@ -27,6 +27,30 @@ provar_swap_por_prazo()
     ! grep -F -- "$alvo" /proc/swaps
 }
 
+provar_morte_abrupta()
+{
+    alvo=$1
+    identidade=$2
+    servidor=$3
+    memoria_mib=$(awk '/MemTotal/ { print int($2 * 80 / 100 / 1024) }' /proc/meminfo)
+    test "$(cat "/sys/class/block/${alvo##*/}/dev")" = "$identidade"
+    mkswap "$alvo"
+    swapon -p -2 "$alvo"
+    /bin/pressionar_memoria "$memoria_mib" 120 &
+    pressor=$!
+    sleep 5
+    kill -9 "$servidor"
+    wait "$servidor" || true
+    processo_do_servidor=""
+    echo "VM: servidor morto; política ublk observada."
+    cat /proc/swaps
+    awk '/MemAvailable|SwapTotal|SwapFree/ { print }' /proc/meminfo
+    ls -l "$alvo" 2>&1 || true
+    kill "$pressor" 2>/dev/null || true
+    wait "$pressor" 2>/dev/null || true
+    timeout 15 swapoff "$alvo" || echo "VM: swapoff não convergiu após SIGKILL."
+}
+
 # Proposito: restituir a instância e entregar a sentença ao hospedeiro.
 restituir_machina()
 {
