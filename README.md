@@ -11,7 +11,7 @@
 > Quando funccionar, a morte do servidor, da machina ou da GPU poderá extinguir
 > cada página confiada à VRAM; não se depositem aqui cousas que não possam renascer.
 
-## § I. PROÊMIO; da grandeza que se deseja alcançar
+## § I. PROÊMIO ~ da grandeza que se deseja alcançar
 
 Seja dada uma machina cuja RAM, grandeza finita e dispendiosa, já não baste;
 ao lado della repousa uma GPU com VRAM ociosa, reservatório veloz porém alheio
@@ -21,7 +21,7 @@ Não se pretende baptisar VRAM como RAM do systema. Tal proposição seria falsa
 a barra PCIe não possue a coherência nem a latência da memória principal.
 Erigir-se-á, pois, um dispositivo de blocos volátil para `swap` e dados refazíveis.
 
-## § II. DO CAMINHO; por onde cada octeto ha-de peregrinar
+## § II. DO CAMINHO ~ por onde cada octeto ha-de peregrinar
 
 ```text
 memória virtual
@@ -35,14 +35,14 @@ memória virtual
 **Postulado central.** Todo octeto atravessará DMA. A CPU jámais fará leitura
 ou escripta pela BAR; ReBAR, DAX, NUMA e FUSE não pertencem a esta demonstração.
 
-## § III. DOS AXIOMAS; condições para que a obra permaneça honesta
+## § III. DOS AXIOMAS ~ condições para que a obra permaneça honesta
 
 - o meio é volátil e recebe somente dados que possam ser reconstruídos;
 - cada requisição conclue uma vez, ou falla dentro de prazo conhecido;
 - toda memória do caminho crítico se prepara antes de publicar o dispositivo;
 - a prova começa sem GPU, por meio simulado, e termina sob `fio` com verificação.
 
-## § IV. DO ESTADO PRESENTE; onde repousa a penna
+## § IV. DO ESTADO PRESENTE ~ onde repousa a penna
 
 A configuração, o meio simulado, as filas ublk e o caminho CUDA acham-se
 provados. Uma RTX 3060 demonstrou a Driver API sob saneador; uma VM sem disco
@@ -50,7 +50,7 @@ confrontou por cinco minutos um ublk simulado de 1 GiB e o removeu no termo,
 sem formatação, montagem ou `swap`. Consulte-se `LIVRO_DA_OBRA.md` antes de
 confiar-lhe um octeto.
 
-## § V. DO OBSERVATORIO; comandos reservados á futura experiência
+## § V. DO OBSERVATORIO ~ comandos reservados á futura experiência
 
 Requerem-se `libublksrv`, `cuda.h`, `libcuda.so`, uma GPU e permissão para
 fixar memória. `nvcc` e `cudart` não participam. A construção real será:
