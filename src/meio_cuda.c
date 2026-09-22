@@ -6,8 +6,38 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #define MARGEM_DA_VRAM_EM_BYTES UINT64_C(536870912)
+#define PARCELA_DA_LIMPEZA UINT64_C(67108864)
+#define PRAZO_DA_LIMPEZA_EM_NS UINT64_C(30000000000)
+
+static uint64_t instante_da_limpeza(void)
+{
+    struct timespec instante;
+    if (clock_gettime(CLOCK_MONOTONIC, &instante) != 0) return 0;
+    return (uint64_t)instante.tv_sec * UINT64_C(1000000000) + instante.tv_nsec;
+}
+
+static int apagar_reserva_cuda(struct meio_cuda *meio, uint64_t *apagados)
+{
+    uint64_t inicio = instante_da_limpeza();
+    uint64_t posicao = 0;
+    *apagados = 0;
+    while (posicao < meio->capacidade_em_bytes) {
+        uint64_t restante = meio->capacidade_em_bytes - posicao;
+        size_t parcela = (size_t)(restante < PARCELA_DA_LIMPEZA ?
+                                  restante : PARCELA_DA_LIMPEZA);
+        uint64_t agora = instante_da_limpeza();
+        if (inicio == 0 || agora < inicio || agora - inicio > PRAZO_DA_LIMPEZA_EM_NS)
+            return 0;
+        if (cuMemsetD8(meio->memoria_da_gpu + posicao, 0, parcela) != CUDA_SUCCESS)
+            return 0;
+        posicao += parcela;
+        *apagados = posicao;
+    }
+    return 1;
+}
 
 /* Uma etiqueta CUDA conserva a sentença que aguarda colheita. */
 struct conclusao_cuda {
